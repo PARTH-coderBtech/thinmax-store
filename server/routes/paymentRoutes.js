@@ -7,10 +7,6 @@ router.post('/create-order', createOrder);
 
 // Verify Razorpay payment
 router.post('/verify', verifyPayment);
-router.get("/test", (req, res) => {
-  console.log("🧪 /api/payment/test hit");
-  res.json({ message: "Test route works" });
-});
 
 
 module.exports = router;
