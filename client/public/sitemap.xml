@@ -1,9 +1,12 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="https://www.sitemaps.org/schemas/sitemap/0.9">
+<?xml version="1.0" encoding="UTF-8" ?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://innodeepschemical.in/</loc>
-    <lastmod>2025-06-27</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>1.0</priority>
+    <loc>https://www.innodeepschemical.in/</loc>
+    <priority>1.00</priority>
   </url>
+  <url>
+    <loc>https://www.innodeepschemical.in/track-order</loc>
+    <priority>0.80</priority>
+  </url>
+  <!-- Add other important pages -->
 </urlset>
