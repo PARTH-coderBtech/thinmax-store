@@ -3,8 +3,6 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 const dotenv = require("dotenv");
 const path = require("path");
-const fs = require("fs");
-
 const authRoutes = require("./routes/authRoutes");
 const productRoutes = require("./routes/productRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
@@ -33,7 +31,7 @@ app.use("/api/payment", paymentRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/orders", orderRoutes);
 
-
+app.use(express.static(path.join(__dirname, "client", "dist")));
 
 // ✅ Connect DB and run server
 mongoose.connect(process.env.MONGO_URI, {
