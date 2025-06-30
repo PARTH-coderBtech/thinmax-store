@@ -151,7 +151,11 @@ exports.verifyPayment = async (req, res) => {
 🏠 Address: ${address}, ${pincode}
 💳 Payment ID: ${razorpay_payment_id}
 📄 Order:
-${(cart && cart.map(item => `${item.name} x${item.quantity}`).join(", ")) || `Thinmax x${quantity}`}
+${
+  cart && Array.isArray(cart)
+    ? cart.map(item => `${item.name} (${item.weight}) x${item.quantity}`).join(", ")
+    : `Thinmax (${weight}) x${quantity}`
+}
 🟢 Payment: Paid
 🔗 Track: ${trackUrl}
 `;
