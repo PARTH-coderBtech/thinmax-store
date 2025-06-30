@@ -3,11 +3,16 @@ const nodemailer = require("nodemailer");
 const Razorpay = require("razorpay");
 const crypto = require("crypto");
 const Order = require("../models/Order");
+const twilio = require("twilio");
 require("dotenv").config();
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY,
   key_secret: process.env.RAZORPAY_SECRET,
 });
+const twilioClient = twilio(
+  process.env.TWILIO_ACCOUNT_SID,
+  process.env.TWILIO_AUTH_TOKEN
+);
 
 // ✅ Create Razorpay order
 exports.createOrder = async (req, res) => {
@@ -47,7 +52,7 @@ exports.verifyPayment = async (req, res) => {
       address,
       pincode,
     } = req.body;
-     const trackUrl = `${process.env.CLIENT_URL}/track-order/${orderId}`;
+    const trackUrl = `${process.env.CLIENT_URL}/track-order/${orderId}`;
 
     const generatedSignature = crypto
       .createHmac("sha256", process.env.RAZORPAY_SECRET)
@@ -138,6 +143,25 @@ exports.verifyPayment = async (req, res) => {
     };
 
     await transporter.sendMail(mailOptions);
+    // ✅ WhatsApp alert to admin
+    const adminMsg = `
+📦 *New Order Received*
+👤 Name: ${customerName}
+📞 Phone: ${phone}
+🏠 Address: ${address}, ${pincode}
+💳 Payment ID: ${razorpay_payment_id}
+📄 Order:
+${(cart && cart.map(item => `${item.name} x${item.quantity}`).join(", ")) || `Thinmax x${quantity}`}
+🟢 Payment: Paid
+🔗 Track: ${trackUrl}
+`;
+
+    await twilioClient.messages.create({
+      from: process.env.TWILIO_PHONE_WHATSAPP,
+      to: process.env.ADMIN_PHONE,
+      body: adminMsg,
+    });
+
 
 
     res.json({
