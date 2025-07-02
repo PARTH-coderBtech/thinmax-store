@@ -52,6 +52,7 @@ exports.verifyPayment = async (req, res) => {
       address,
       pincode,
     } = req.body;
+
     const trackUrl = `${process.env.CLIENT_URL}/track-order/${orderId}`;
 
     const generatedSignature = crypto
@@ -74,21 +75,47 @@ exports.verifyPayment = async (req, res) => {
     };
 
     let customerEmail = "", customerName = "", summaryHTML = "";
+    let totalItems = 0;
+    let totalPrice = 0;
 
-    // Handle static or cart order
     if (cart && Array.isArray(cart)) {
       orderData.cart = cart;
       orderData.customer = customer;
       customerEmail = customer.email;
       customerName = customer.name;
+
       summaryHTML = `
         <h4>Your Order Summary:</h4>
-        <ul>${cart.map(
-        item => `<li>${item.name} (${item.weight}) x ${item.quantity} - ₹${item.pricePerUnit}</li>`
-      ).join("")}</ul>
-        <p>Total Items: ${cart.length}</p>
+        <ul>
+          ${cart.map(item => {
+            const adjustedPrice = item.weight === '1kg'
+              ? item.pricePerUnit
+              : item.pricePerUnit;
+
+            const itemTotal = adjustedPrice * item.quantity;
+            totalItems += item.quantity;
+            totalPrice += itemTotal;
+
+            return `
+              <li>${item.name} (${item.weight}) x ${item.quantity}</li>
+              <li>Price Per Unit: ₹${adjustedPrice}</li>
+              <li>Subtotal: ₹${itemTotal}</li>
+            `;
+          }).join("")}
+        </ul>
+        <p><strong>Total Items:</strong> ${totalItems}</p>
+        <p><strong>Total Payable Amount:</strong> ₹${totalPrice}</p>
       `;
+
+      orderData.totalItems = totalItems;
+      orderData.totalPrice = totalPrice;
+
     } else {
+      // Single product order (not cart-based)
+      const adjustedPrice = weight === '1kg' ? 499 * 2 - 98 : 499;
+      totalItems = quantity;
+      totalPrice = adjustedPrice * quantity;
+
       orderData.productId = productId;
       orderData.quantity = quantity;
       orderData.weight = weight;
@@ -97,26 +124,27 @@ exports.verifyPayment = async (req, res) => {
       orderData.phone = phone;
       orderData.address = address;
       orderData.pincode = pincode;
+      orderData.totalItems = totalItems;
+      orderData.totalPrice = totalPrice;
+
       customerEmail = email;
       customerName = name;
+
       summaryHTML = `
         <h4>Your Order Summary:</h4>
         <ul>
           <li>Product: Thinmax Waterproofing</li>
           <li>Quantity: ${quantity}</li>
           <li>Weight: ${weight}</li>
+          <li>Price Per Unit: ₹${adjustedPrice}</li>
+          <li>Total: ₹${totalPrice}</li>
         </ul>
       `;
     }
 
-    let savedOrder;
-    try {
-      savedOrder = await Order.create(orderData);
-    } catch (orderErr) {
-      console.error("❌ Failed to save order:", orderErr);
-      return res.status(500).json({ message: "Could not save order" });
-    }
+    const savedOrder = await Order.create(orderData);
 
+    // Email
     const transporter = nodemailer.createTransport({
       host: process.env.EMAIL_HOST,
       port: process.env.EMAIL_PORT,
@@ -137,13 +165,13 @@ exports.verifyPayment = async (req, res) => {
         <p><strong>Order ID:</strong> ${orderId}</p>
         ${summaryHTML}
         <p>You can track your order at: <a href="${trackUrl}">Track Order</a></p>
-
         <p>We’ll notify you as it moves forward. <br />– Innodeeps Team</p>
       `,
     };
 
     await transporter.sendMail(mailOptions);
-    // ✅ WhatsApp alert to admin
+
+    // WhatsApp alert to admin
     const adminMsg = `
 📦 *New Order Received*
 👤 Name: ${customerName}
@@ -156,6 +184,7 @@ ${
     ? cart.map(item => `${item.name} (${item.weight}) x${item.quantity}`).join(", ")
     : `Thinmax (${weight}) x${quantity}`
 }
+💰 Total: ₹${totalPrice}
 🟢 Payment: Paid
 🔗 Track: ${trackUrl}
 `;
@@ -165,8 +194,6 @@ ${
       to: process.env.ADMIN_PHONE,
       body: adminMsg,
     });
-
-
 
     res.json({
       message: "Payment verified and email sent successfully",
