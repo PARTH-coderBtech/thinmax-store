@@ -1,15 +1,12 @@
 {
   "redirects": [
     {
-      "source": "/",
-      "destination": "/",
+      "source": "https://www.innodeepschemical.in/:path*",
+      "destination": "https://innodeepschemical.in/:path*",
       "permanent": true
     }
   ],
   "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
-    }
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
